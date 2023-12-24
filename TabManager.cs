@@ -63,10 +63,17 @@ namespace LethalCompanyTrollMenuMod.Component
 
         void Update()
         {
-            if (new KeyboardShortcut(KeyCode.F1).IsUp() && TrollMenu.isInGame)
+            if (new KeyboardShortcut(KeyCode.F1).IsUp() && (TrollMenu.isInGame || showMenu))
             {
                 showMenu = !showMenu;
-                
+                if(showMenu)
+                {
+                    foreach(Type type in toolBarTypes)
+                    {
+                        if(type.GetMethod("OnMenuOpened") != null)
+                            type.GetMethod("OnMenuOpened").Invoke(null, null);
+                    }
+                }
             }
             if (CurrentScene() != scene)
             {

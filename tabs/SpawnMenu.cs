@@ -6,7 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-
+using LethalCompanyTrollMenuMod.helpers;
 namespace LethalCompanyTrollMenuMod.tabs
 {
     internal class SpawnMenu
@@ -16,10 +16,42 @@ namespace LethalCompanyTrollMenuMod.tabs
         public static PlayerControllerB currentPlayer = null;
         public static List<bool> plyToggle = new List<bool>();
         public static List<bool> lastToggleState = new List<bool>();
-        public static bool randomSpawn = false;
+        public static bool randomSpawn = true;
         public static bool spawnNearPlayer = false;
         public static bool spawnNearRandomPlayer = false;
         private static int lastSelected = 0;
+        private static Select<PlayerControllerB> playerSelect = null;
+        private static Dictionary<string, PlayerControllerB> players = new Dictionary<string, PlayerControllerB>();
+        private static Dictionary<string,int> spawnType = new Dictionary<string, int>()
+        {
+            {"Random Spawn",0 },
+            {"Spawn Near Player",1 },
+            {"Spawn Near Random Player",2 }
+        };
+        private static Select<int> spawnSelect = null;
+        private static int selected = 0;
+
+        public static void OnMenuOpened()
+        {
+            if (!TrollMenu.isInGame) return;
+            if (playerSelect == null)
+            {
+                PlayerControllerB[] plys = GetPlayer();
+                foreach (PlayerControllerB ply in plys)
+                {
+                    if(!players.ContainsKey(ply.playerUsername))
+                    players.Add(ply.playerUsername, ply);
+                }
+            }
+            if(playerSelect == null)
+            playerSelect = new Select<PlayerControllerB>(players);
+            if(spawnSelect == null)
+            {
+                spawnSelect = new Select<int>(spawnType);
+                spawnSelect.SetDefault(0);
+            }
+
+        }
         public static void Draw(Rect wr)
         {
             scrollRect = new Rect(0, 0, wr.width, 100 + 30 * TrollMenu.outsideEnemies.Count + 30 * TrollMenu.insideEnemies.Count);
@@ -27,52 +59,26 @@ namespace LethalCompanyTrollMenuMod.tabs
             int y = 50;
             GUI.Label(new Rect(wr.x, y, wr.width, 25), "Spawn Menu");
             y += 25;
-            randomSpawn = GUI.Toggle(new Rect(wr.x, y, wr.width, 25), randomSpawn, "Random Spawn");
-            y += 25;
-            spawnNearPlayer = GUI.Toggle(new Rect(wr.x, y, wr.width, 25), spawnNearPlayer , "Spawn near player");
-            y += 25;
-            spawnNearRandomPlayer = GUI.Toggle(new Rect(wr.x, y, wr.width, 25), spawnNearRandomPlayer, "Spawn near random player");
-            y += 25;
-            if(lastSelected == 0 && spawnNearPlayer)
+            selected = spawnSelect.Draw(new Rect(wr.x, y, wr.width, 25));
+            y += 100;
+            if (selected != lastSelected)
             {
-                lastSelected = 1;
-                randomSpawn = false;
-                spawnNearRandomPlayer = false;
-            }
-            if(lastSelected == 0 && spawnNearRandomPlayer)
-            {
-                lastSelected = 2;
                 randomSpawn = false;
                 spawnNearPlayer = false;
-            }
-            if(lastSelected == 1 && randomSpawn)
-            {
-                lastSelected = 0;
-                spawnNearPlayer = false;
                 spawnNearRandomPlayer = false;
-            }
-            if (lastSelected == 1 && spawnNearRandomPlayer)
-            {
-                lastSelected = 2;
-                randomSpawn = false;
-                spawnNearPlayer = false;
-            }
-            if (lastSelected == 2 && randomSpawn)
-            {
-                lastSelected = 0;
-                spawnNearPlayer = false;
-                spawnNearRandomPlayer = false;
-            }
-            if (lastSelected == 2 && spawnNearPlayer)
-            {
-                lastSelected = 1;
-                randomSpawn = false;
-                spawnNearRandomPlayer = false;
-            }
-            if(!randomSpawn && !spawnNearPlayer && !spawnNearRandomPlayer)
-            {
-                lastSelected = 0;
-                randomSpawn = true;
+                lastSelected = selected;
+                switch (selected)
+                {
+                    case 1:
+                        randomSpawn = true;
+                        break;
+                    case 2:
+                        spawnNearPlayer = true;
+                        break;
+                    case 3:
+                        spawnNearRandomPlayer = true;
+                        break;
+                }
             }
             
             GUI.Label(new Rect(wr.x, y, wr.width, 25), "Outside Enemies");
@@ -141,7 +147,8 @@ namespace LethalCompanyTrollMenuMod.tabs
                 y += 30;
             }
             GUI.EndScrollView();
-            CreatePlayerMenu(new Rect(wr.x + wr.width, wr.y, 200, wr.height));
+            GUI.Box(new Rect(wr.x + wr.width, wr.y, wr.width, 30 * GetPlayer().Length), "Select a player");
+            currentPlayer = playerSelect.Draw(new Rect(wr.x + wr.width, wr.y+25, wr.width, 25));
         }
 
         private static PlayerControllerB GetRandomPlayer()

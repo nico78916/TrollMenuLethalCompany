@@ -35,6 +35,7 @@ namespace LethalCompanyTrollMenuMod
         public static Dictionary<string, EnemyType> insideEnemies = new Dictionary<string, EnemyType>();
         public static Dictionary<string, EnemyType> outsideEnemies = new Dictionary<string, EnemyType>();
         public static Dictionary<string, AnomalyType> anomalies = new Dictionary<string, AnomalyType>();
+        public static Dictionary<string, SpawnableMapObject> deadlyobjects = new Dictionary<string, SpawnableMapObject>();
 
         public static bool isInGame = false;
 
@@ -42,9 +43,14 @@ namespace LethalCompanyTrollMenuMod
 
         public static GameObject[] outsideSpawn = new GameObject[0];
 
+
         public static RoundManager roundManager;
 
+        public static Dictionary<string, PlayerControllerB> alivePlayers = new Dictionary<string, PlayerControllerB>();
+        public static Dictionary<string, PlayerControllerB> deadPlayers = new Dictionary<string, PlayerControllerB>();
+        public static Dictionary<string, PlayerControllerB> allPlayers = new Dictionary<string, PlayerControllerB>();
 
+        private static RandomMapObject[] randomMapObjects = new RandomMapObject[0];
 
         void Awake()
         {
@@ -91,7 +97,7 @@ namespace LethalCompanyTrollMenuMod
             {
                 mls.LogInfo("\t" + type.Name);
             }
-
+            TrollMenuStyle.Awake();
         }
 
         public EnemyAI[] FindAliveEnemies()
@@ -104,6 +110,24 @@ namespace LethalCompanyTrollMenuMod
         [HarmonyPrefix]
         public static bool LoadNewLevelPatch(ref RoundManager __instance)
         {
+            //Update playerList
+            alivePlayers.Clear();
+            deadPlayers.Clear();
+            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            {
+                if (!player.isPlayerDead)
+                {
+                    if(!alivePlayers.ContainsKey(player.playerUsername))
+                        alivePlayers.Add(player.playerUsername, player);
+                }
+                else
+                {
+                    if(!deadPlayers.ContainsKey(player.playerUsername))
+                        deadPlayers.Add(player.playerUsername, player);
+                }
+                if(!allPlayers.ContainsKey(player.playerUsername))
+                    allPlayers.Add(player.playerUsername, player);
+            }
             roundManager = __instance;
             roundManager.mapPropsContainer = GameObject.FindGameObjectWithTag("MapPropsContainer");
             //Get all the spawnable enemies
@@ -111,11 +135,13 @@ namespace LethalCompanyTrollMenuMod
             foreach (EnemyType enemy in instances)
             {
                 if (enemy.isOutsideEnemy)
-                {
+                {                  
+                    if(!outsideEnemies.ContainsKey(enemy.name))
                     outsideEnemies.Add(enemy.name, enemy);
                 }
                 else
                 {
+                    if(!insideEnemies.ContainsKey(enemy.name))
                     insideEnemies.Add(enemy.name, enemy);
                 }
                 mls.LogInfo("Added " + enemy.name + " (" + (enemy.isOutsideEnemy ? "outside" : "inside") + ") to the list");
@@ -124,18 +150,6 @@ namespace LethalCompanyTrollMenuMod
             foreach (EnemyType type in instances)
             {
                 mls.LogInfo("\t" + type.enemyName);
-            }
-            //Get all the anomalies
-            AnomalyType[] anomalyTypes = Resources.FindObjectsOfTypeAll<AnomalyType>();
-            foreach (AnomalyType anomaly in anomalyTypes)
-            {
-                anomalies.Add(anomaly.name, anomaly);
-                mls.LogInfo("Added " + anomaly.name + " to the list");
-            }
-            SpawnableMapObject[] spawnableMapObjects = __instance.spawnableMapObjects;
-            foreach (SpawnableMapObject spawnableMapObject in spawnableMapObjects)
-            {
-                mls.LogInfo("Found " + spawnableMapObject.prefabToSpawn.name);
             }
             return true;
         }
@@ -170,6 +184,23 @@ namespace LethalCompanyTrollMenuMod
         }
 
 
+        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.GeneratedFloorPostProcessing))]
+        [HarmonyPostfix]
+        public static void GeneratedFloorPostProcessingPatch(ref RoundManager __instance)
+        {
+            randomMapObjects = UnityEngine.Object.FindObjectsOfType<RandomMapObject>();
+            mls.LogError("Found " + randomMapObjects.Length + " RandomMapObject");
+            SpawnableMapObject[] spawnableMapObjects = __instance.spawnableMapObjects;
+            mls.LogInfo("Found " + spawnableMapObjects.Length + " SpawnableMapObject");
+            foreach (SpawnableMapObject spawnableMapObject in spawnableMapObjects)
+            {
+                mls.LogInfo("Found " + spawnableMapObject.prefabToSpawn.name);
+                if(!deadlyobjects.ContainsKey(spawnableMapObject.prefabToSpawn.name))
+                deadlyobjects.Add(spawnableMapObject.prefabToSpawn.name, spawnableMapObject);
+            }
+        }
+
+        
         private static void SpawnInsideEnemy(EnemyType enemy, EnemyVent vent)
         {
             vent.enemyType = enemy;
@@ -370,33 +401,34 @@ namespace LethalCompanyTrollMenuMod
             gameObject.GetComponent<NetworkObject>().Spawn(true);
         }
 
+
+
         public static void SpawnHostileObjectAtRandomPos(SpawnableMapObject obj)
         {
-            RandomMapObject[] objectsOfType = UnityEngine.Object.FindObjectsOfType<RandomMapObject>();
-            List<RandomMapObject> randomMapObjectList = new List<RandomMapObject>();
-
-            for (int index2 = 0; index2 < objectsOfType.Length; ++index2)
+            //On récupère tous les insideAINodes
+            GameObject[] insideAINodes = roundManager.insideAINodes;
+            if(obj == null)
             {
-                if (objectsOfType[index2].spawnablePrefabs.Contains(obj.prefabToSpawn))
-                    randomMapObjectList.Add(objectsOfType[index2]);
+                mls.LogError("SpawnableMapObject is null");
+                return;
             }
-            RandomMapObject randomMapObject = randomMapObjectList[roundManager.AnomalyRandom.Next(0, randomMapObjectList.Count)];
-            Vector3 positionInRadius = roundManager.GetRandomNavMeshPositionInRadius(randomMapObject.transform.position, randomMapObject.spawnRange);
+            GameObject randomMapObject = insideAINodes[roundManager.AnomalyRandom.Next(0, insideAINodes.Length)];
+            if (randomMapObject == null)
+            {
+                mls.LogError("RandomMapObject is null");
+                return;
+            }
+            Vector3 positionInRadius = roundManager.GetRandomNavMeshPositionInRadius(randomMapObject.transform.position, 100f);
             SpawnHostileObjectAtPosition(obj, positionInRadius);
         }
         public static void SpawnHostileObjectNearPlayer(SpawnableMapObject obj,PlayerControllerB ply)
         {
-            RandomMapObject[] objectsOfType = UnityEngine.Object.FindObjectsOfType<RandomMapObject>();
-            List<RandomMapObject> randomMapObjectList = new List<RandomMapObject>();
-            for (int index2 = 0; index2 < objectsOfType.Length; ++index2)
+            if(!ply.isInsideFactory)
             {
-                if (objectsOfType[index2].spawnablePrefabs.Contains(obj.prefabToSpawn))
-                    randomMapObjectList.Add(objectsOfType[index2]);
+                mls.LogError("Player isn't inside the factory");
+                return;
             }
-            //Sort by distance
-            randomMapObjectList = randomMapObjectList.OrderBy(x => Vector3.Distance(x.transform.position, ply.transform.position)).ToList();
-            RandomMapObject randomMapObject = randomMapObjectList.First();
-            Vector3 positionInRadius = roundManager.GetRandomNavMeshPositionInRadius(randomMapObject.transform.position, randomMapObject.spawnRange);
+            Vector3 positionInRadius = roundManager.GetRandomNavMeshPositionInRadius(ply.transform.position, 50f);
             SpawnHostileObjectAtPosition(obj, positionInRadius);
         }
     }

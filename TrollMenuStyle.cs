@@ -8,12 +8,12 @@ namespace LethalCompanyTrollMenuMod
 {
     internal class TrollMenuStyle : MonoBehaviour
     {
-        public static GUIStyle menuStyle = new GUIStyle(GUI.skin.box);
-        public static GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
-        public static GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
-        public static GUIStyle toggleStyle = new GUIStyle(GUI.skin.toggle);
-        public static GUIStyle hScrollStyle = new GUIStyle(GUI.skin.horizontalSlider);
-        public static GUIStyle errorLabel = new GUIStyle(GUI.skin.label);
+        public static GUIStyle menuStyle = new GUIStyle();
+        public static GUIStyle buttonStyle = new GUIStyle();
+        public static GUIStyle labelStyle = new GUIStyle();
+        public static GUIStyle toggleStyle = new GUIStyle();
+        public static GUIStyle hScrollStyle = new GUIStyle();
+        public static GUIStyle errorLabel = new GUIStyle();
 
         private static Texture2D CreateTexture(int width, int height, Color col)
         {
@@ -28,7 +28,7 @@ namespace LethalCompanyTrollMenuMod
             return result;
         }
 
-        public void Awake()
+        public static void Awake()
         {
             InitTextures();
         }
@@ -36,7 +36,7 @@ namespace LethalCompanyTrollMenuMod
         public static void InitTextures()
         {
             menuStyle.normal.textColor = Color.white;
-            menuStyle.normal.background = CreateTexture(2, 2, new Color(0.01f, 0.01f, 0.1f, .9f));
+            menuStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
             menuStyle.fontSize = 18;
             menuStyle.normal.background.hideFlags = HideFlags.HideAndDontSave;
 
@@ -44,19 +44,20 @@ namespace LethalCompanyTrollMenuMod
             buttonStyle.fontSize = 18;
 
             labelStyle.normal.textColor = Color.white;
-            labelStyle.normal.background = CreateTexture(2, 2, new Color(0.01f, 0.01f, 0.1f, .9f));
-            labelStyle.fontSize = 18;
+            labelStyle.fontSize = 25;
+            labelStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
             labelStyle.normal.background.hideFlags = HideFlags.HideAndDontSave;
 
             toggleStyle.normal.textColor = Color.white;
             toggleStyle.fontSize = 18;
 
             hScrollStyle.normal.textColor = Color.white;
-            hScrollStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.2f, .9f));
+            hScrollStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
             hScrollStyle.normal.background.hideFlags = HideFlags.HideAndDontSave;
 
             errorLabel.normal.textColor = Color.red;
             errorLabel.onNormal.textColor = Color.red;
+            errorLabel.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
             errorLabel.fontSize = 18;
         }
     }
