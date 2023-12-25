@@ -178,11 +178,18 @@ namespace LethalCompanyTrollMenuMod
             }
         }
 
+
+        private static void spawnEnemy(EnemyType enemyType,Vector3 position,float yRot)
+        {
+            GameObject gameObject3 = UnityEngine.Object.Instantiate<GameObject>(enemyType.enemyPrefab, position, Quaternion.Euler(new Vector3(0.0f, yRot, 0.0f)));
+            gameObject3.GetComponentInChildren<NetworkObject>().Spawn(true);
+            roundManager.SpawnedEnemies.Add(gameObject3.GetComponent<EnemyAI>());
+            enemyType.numberSpawned++;
+        }
         
         private static void SpawnInsideEnemy(EnemyType enemy, EnemyVent vent)
         {
-            vent.enemyType = enemy;
-            roundManager.SpawnEnemyFromVent(vent);
+            spawnEnemy(enemy, vent.transform.position, vent.transform.eulerAngles.y);
             TrollConsole.DisplayMessage("Spawned " + enemy.enemyName + " at " + vent.transform.position,MessageType.SUCCESS);
         }
 

@@ -84,16 +84,18 @@ namespace LethalCompanyTrollMenuMod.tabs
             GUI.Label(new Rect(wr.x, y, wr.width, 25), "Outside Enemies");
             foreach(KeyValuePair<string,EnemyType> enemy in TrollMenu.outsideEnemies)
             {
-                if (GUI.Button(new Rect(wr.x, wr.y + y, wr.width, 25), enemy.Key))
+                string name = enemy.Key;
+                EnemyType type = enemy.Value;
+                if (GUI.Button(new Rect(wr.x, wr.y + y, wr.width, 25), name))
                 {
                     if(randomSpawn)
                     {
-                        TrollConsole.DisplayMessage("Spawning " + enemy.Key + " at random position");
-                        TrollMenu.SpawnOutsideEnemy(enemy.Value);
+                        TrollConsole.DisplayMessage("Spawning " + name + " at random position");
+                        TrollMenu.SpawnOutsideEnemy(type);
                     }else if(spawnNearPlayer)
                     {
                         
-                        TrollMenu.SpawnEnemyOutsideNearPlayer(enemy.Value, currentPlayer);
+                        TrollMenu.SpawnEnemyOutsideNearPlayer(type, currentPlayer);
                     }
                     else if (spawnNearRandomPlayer)
                     {
@@ -109,7 +111,7 @@ namespace LethalCompanyTrollMenuMod.tabs
                                 ply = currentPlayer;
                             }
                         }
-                        TrollMenu.SpawnEnemyOutsideNearPlayer(enemy.Value, ply);
+                        TrollMenu.SpawnEnemyOutsideNearPlayer(type, ply);
                     }
 
                 }
@@ -120,15 +122,17 @@ namespace LethalCompanyTrollMenuMod.tabs
             y +=25;
             foreach (KeyValuePair<string, EnemyType> enemy in TrollMenu.insideEnemies)
             {
-                if (GUI.Button(new Rect(wr.x, wr.y + y, wr.width, 25), enemy.Key))
+                string name = enemy.Key;
+                EnemyType type = enemy.Value;
+                if (GUI.Button(new Rect(wr.x, wr.y + y, wr.width, 25), name))
                 {
                     if(randomSpawn)
                     {
-                        TrollMenu.SpawnInsideEnemy(enemy.Value);
+                        TrollMenu.SpawnInsideEnemy(type);
                     }
                     else if (spawnNearPlayer)
                     {
-                        TrollMenu.SpawnEnemyInsideNearPlayer(enemy.Value, currentPlayer);
+                        TrollMenu.SpawnEnemyInsideNearPlayer(type, currentPlayer);
                     }else if(spawnNearRandomPlayer)
                     {
                         PlayerControllerB ply = GetRandomPlayer();
@@ -143,7 +147,7 @@ namespace LethalCompanyTrollMenuMod.tabs
                                 ply = currentPlayer;
                             }
                         }
-                        TrollMenu.SpawnEnemyInsideNearPlayer(enemy.Value, ply);
+                        TrollMenu.SpawnEnemyInsideNearPlayer(type, ply);
                     }
                 }
                 y += 30;
