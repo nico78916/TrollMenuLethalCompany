@@ -183,6 +183,7 @@ namespace LethalCompanyTrollMenuMod
         {
             vent.enemyType = enemy;
             roundManager.SpawnEnemyFromVent(vent);
+            TrollConsole.DisplayMessage("Spawned " + enemy.enemyName + " at " + vent.transform.position,MessageType.SUCCESS);
         }
 
         public static void SpawnInsideEnemy(EnemyType enemy)
@@ -275,11 +276,13 @@ namespace LethalCompanyTrollMenuMod
             gameObject.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
             roundManager.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
             ++gameObject.GetComponent<EnemyAI>().enemyType.numberSpawned;
+            TrollConsole.DisplayMessage("Spawned " + enemy.enemyName + " at " + position,MessageType.SUCCESS);
         }
 
 
         public static void SpawnEnemyInsideNearPlayer(EnemyType enemy, PlayerControllerB player)
         {
+            TrollConsole.DisplayMessage("Spawning " + enemy.enemyName + " near " + player.playerUsername);
             //Get all the vents
             enemyVentsCache = FindObjectsOfType<EnemyVent>();
             if (enemy == null)
@@ -319,6 +322,7 @@ namespace LethalCompanyTrollMenuMod
         }
         public static void SpawnEnemyOutsideNearPlayer(EnemyType enemy, PlayerControllerB player)
         {
+            TrollConsole.DisplayMessage("Spawning " + enemy.enemyName + " near " + player.playerUsername);
             //Get all the spawn points
             outsideSpawn = GameObject.FindGameObjectsWithTag("OutsideAINode");
             if (enemy == null)

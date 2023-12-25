@@ -88,9 +88,11 @@ namespace LethalCompanyTrollMenuMod.tabs
                 {
                     if(randomSpawn)
                     {
+                        TrollConsole.DisplayMessage("Spawning " + enemy.Key + " at random position");
                         TrollMenu.SpawnOutsideEnemy(enemy.Value);
                     }else if(spawnNearPlayer)
                     {
+                        
                         TrollMenu.SpawnEnemyOutsideNearPlayer(enemy.Value, currentPlayer);
                     }
                     else if (spawnNearRandomPlayer)
