@@ -46,6 +46,7 @@ namespace LethalCompanyTrollMenuMod.helpers
                     old[i] = false;
                     current[i] = false;
                 }
+                return defaultValue;
             }
             T selected = defaultValue;
             int y = 0;
@@ -71,11 +72,19 @@ namespace LethalCompanyTrollMenuMod.helpers
                                 old[j] = false;
                             }
                         }
-                        selected = vals[i];
                     }
                     old[i] = current[i];
                 }
             }
+
+            //Get the index of true value
+            List<bool> currentList = current.ToList();
+            int index = currentList.IndexOf(true);
+            if(index != -1)
+            {
+                selected = vals[index];
+            }
+
             //we check if no option is selected
             if (!current.Contains(true))
             {
