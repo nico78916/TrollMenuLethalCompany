@@ -13,6 +13,12 @@ You can spawn enemies :
 
 Use this menu to change the value and amount of the items on map generation.
 
+### Alive Enemies Menu
+
+List all the alive enemies and you can :
+- Kill them (only option for now)											
+The objective of next update is to teleport them to a random location or a player location.
+
 ### Player Menu
 
 Not here yet
@@ -31,9 +37,9 @@ Not here yet
 Not here yet
 
 
-## Known issues
+## Known issues (not to fix soon)
 
-None for now
+Most of options are not working if you are not the host.
 
 ## Installation
 
