@@ -14,6 +14,8 @@ namespace LethalCompanyTrollMenuMod
         public static GUIStyle toggleStyle = new GUIStyle();
         public static GUIStyle hScrollStyle = new GUIStyle();
         public static GUIStyle errorLabel = new GUIStyle();
+        public static GUIStyle errorStyle = new GUIStyle();
+        public static GUIStyle successStyle = new GUIStyle();
 
         private static Texture2D CreateTexture(int width, int height, Color col)
         {
@@ -59,6 +61,16 @@ namespace LethalCompanyTrollMenuMod
             errorLabel.onNormal.textColor = Color.red;
             errorLabel.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
             errorLabel.fontSize = 18;
+
+            errorStyle.normal.textColor = Color.red;
+            errorStyle.onNormal.textColor = Color.red;
+            errorStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
+            errorStyle.fontSize = 20;
+
+            successStyle.normal.textColor = Color.green;
+            successStyle.onNormal.textColor = Color.green;
+            successStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
+            successStyle.fontSize = 20;
         }
     }
 }

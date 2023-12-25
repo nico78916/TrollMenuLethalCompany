@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Runtime.CompilerServices;
 
 namespace LethalCompanyTrollMenuMod.Component
 {
+    
     internal class TabManager : MonoBehaviour
     {
         private Rect wr = new Rect(20, 20, 500, 800);
@@ -15,6 +17,7 @@ namespace LethalCompanyTrollMenuMod.Component
         private Type[] toolBarTypes = null;
         private string[] toolbarStrings = { "No tabs spotted" };
         private bool showMenu = false;
+        public static bool showMessage = false;
 
         private Type[] getTabs()
         {
@@ -30,6 +33,8 @@ namespace LethalCompanyTrollMenuMod.Component
             }
             return tabs.ToArray();
         }
+
+        
 
         void OnGUI()
         {
@@ -87,6 +92,5 @@ namespace LethalCompanyTrollMenuMod.Component
             TrollMenu.mls.LogError("UNLOADED MENU");
         }
 
-        
     }
 }

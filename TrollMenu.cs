@@ -52,6 +52,14 @@ namespace LethalCompanyTrollMenuMod
 
         private static RandomMapObject[] randomMapObjects = new RandomMapObject[0];
 
+        public static List<EnemyAI> aliveEnemies {
+            get {
+
+                if (!isInGame || roundManager == null) return new List<EnemyAI>();
+                return roundManager.SpawnedEnemies;
+            }
+        }
+
         void Awake()
         {
             mls = BepInEx.Logging.Logger.CreateLogSource("TrollMenu");
@@ -64,39 +72,9 @@ namespace LethalCompanyTrollMenuMod
             DontDestroyOnLoad(obj);
             obj.hideFlags = HideFlags.HideAndDontSave;
             obj.AddComponent<TabManager>();
+            obj.AddComponent<TrollConsole>();
             Window = obj.GetComponent<TabManager>();
 
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            //store the current location of the assembly
-            string location = assembly.Location;
-            //We split the location to find "Lethal Company"
-            string[] split = location.Split('\\');
-            //Getting the index of "Lethal Company"
-            int index = Array.IndexOf(split, "Lethal Company");
-            //We create a new array with the length of the split array minus the index of "Lethal Company"
-            List<string> newSplit = new List<string>();
-            //We copy the split array into the newSplit array
-            for (int i = 0; i <= index; i++)
-            {
-                newSplit.Add(split[i]);
-            }
-            //We add the \Lethal Company_Data\Managed\Assembly-CSharp.dll to the newSplit array
-            newSplit.Add("Lethal Company_Data");
-            newSplit.Add("Managed");
-            newSplit.Add("Assembly-CSharp.dll");
-            //We join the newSplit array to get the path to the Assembly-CSharp.dll
-            string path = string.Join("\\", newSplit.ToArray());
-            mls.LogInfo(path);
-            //We load the Assembly-CSharp.dll
-            Assembly cSharp = Assembly.LoadFile(path);
-            //We get all the ...AI classes
-            Type[] types = cSharp.GetTypes().Where(x => x.Name.EndsWith("AI")).ToArray();
-            //We print it in log
-            mls.LogInfo("Found " + types.Length + " AI");
-            foreach (Type type in types)
-            {
-                mls.LogInfo("\t" + type.Name);
-            }
             TrollMenuStyle.Awake();
         }
 
@@ -399,6 +377,7 @@ namespace LethalCompanyTrollMenuMod
             GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(obj.prefabToSpawn, pos, Quaternion.identity, roundManager.mapPropsContainer.transform);
             gameObject.transform.eulerAngles = !obj.spawnFacingAwayFromWall ? new Vector3(gameObject.transform.eulerAngles.x, (float)roundManager.AnomalyRandom.Next(0, 360), gameObject.transform.eulerAngles.z) : new Vector3(0.0f, roundManager.YRotationThatFacesTheFarthestFromPosition(pos + Vector3.up * 0.2f), 0.0f);
             gameObject.GetComponent<NetworkObject>().Spawn(true);
+            TrollConsole.DisplayMessage("Spawned " + obj.prefabToSpawn.name,MessageType.SUCCESS);
         }
 
 
@@ -428,8 +407,21 @@ namespace LethalCompanyTrollMenuMod
                 mls.LogError("Player isn't inside the factory");
                 return;
             }
-            Vector3 positionInRadius = roundManager.GetRandomNavMeshPositionInRadius(ply.transform.position, 50f);
+            SpawnHostileObjectNearPlayer(obj, ply,50);
+        }
+        public static void SpawnHostileObjectNearPlayer(SpawnableMapObject obj, PlayerControllerB ply,int range)
+        {
+            if (!ply.isInsideFactory)
+            {
+                mls.LogError("Player isn't inside the factory");
+                TrollConsole.DisplayMessage("Player isn't inside the factory", MessageType.ERROR);
+                return;
+            }
+            Vector3 positionInRadius = roundManager.GetRandomNavMeshPositionInRadius(ply.transform.position, (float)range);
+            TrollConsole.DisplayMessage("Position of "+obj.prefabToSpawn.name + " = " +positionInRadius);
+            TrollConsole.DisplayMessage("Spawning " + obj.prefabToSpawn.name + " at "+ Vector3.Distance(positionInRadius,ply.transform.position) +"m from "+ ply.playerUsername);
             SpawnHostileObjectAtPosition(obj, positionInRadius);
+
         }
     }
 }
