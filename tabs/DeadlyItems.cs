@@ -1,5 +1,4 @@
 ﻿using GameNetcodeStuff;
-using JetBrains.Annotations;
 using LethalCompanyTrollMenuMod.helpers;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,7 +43,6 @@ namespace LethalCompanyTrollMenuMod.tabs
             currentMode = spawnMode.Draw(new Rect(wr.x + 10f, wr.y + y, 200f, 30f));
             y += 90;// 3 * 30 because there are 3 spawn modes
             currentPlayer = playerSelect.Draw(new Rect(wr.x + wr.width + 10, wr.y, 200f, 30f));
-            y+= 30;
             GUI.Label(new Rect(wr.x + 10f, wr.y + y, 200f, 25f), "Near Player Range: ");
             rangeString = GUI.TextField(new Rect(wr.x + 200f, wr.y + y, 100f, 30f), rangeString);
             if(rangeString != "")
