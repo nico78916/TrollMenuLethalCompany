@@ -10,11 +10,11 @@ You can spawn enemies :
 - At a random location
 - Spawn behind a (random) player
 ### Important !
-If your target is outside and want to spawn an inside enemy behind him only the following enemies will work :
-- Nutcracker
-- Crawler
-- DressGirl
-- LassoMan (does not kill the player)
+	If your target is outside and want to spawn an inside enemy behind him only the following enemies will work :
+	- Nutcracker
+	- Crawler
+	- DressGirl
+	- LassoMan (does not kill the player)
 ### Scrap Menu
 
 Use this menu to change the value and amount of the items on map generation.
@@ -49,7 +49,7 @@ Not here yet
 ## Known issues (not to fix soon)
 
 Most of options are not working if you are not the host.
-I can still spawn inside enemies behind a outside player but it will be laggy or simple inactive
+You can still spawn inside enemies behind a outside player but it will be laggy or simply inactive
 
 ## Installation
 
@@ -62,8 +62,15 @@ In game, press F1 to open the menu.
 
 At this time, the mod has not been tested while not being the host.
 
+To open console press F2
+
 ## latest changes
 - Added new actions to AliveEnemies menu
 - Added Option to spawn enemies behind (random) player
 - Fixed the DeadlyItems menu
-- 
+- Added version check
+- Fixed No player found Bug when restarting a game
+
+## Links
+[GitHub](https://github.com/nico78916/TrollMenuLethalCompany)
+[thunder store](https://thunderstore.io/c/lethal-company/p/TrollNation/Troll_mod/)
