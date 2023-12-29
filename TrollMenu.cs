@@ -21,7 +21,7 @@ namespace LethalCompanyTrollMenuMod
         // Mod Details
         private const string modGUID = "Nico78916.TrollMenu";
         private const string modName = "Lethal Company Troll Menu";
-        public const string modVersion = "1.0.1";
+        public const string modVersion = "1.0.2";
 
         public static ManualLogSource mls { get; private set; }
 
