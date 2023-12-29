@@ -1,12 +1,10 @@
 ﻿using GameNetcodeStuff;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using LethalCompanyTrollMenuMod.helpers;
+using System;
+using System.Linq;
+
 namespace LethalCompanyTrollMenuMod.tabs
 {
     internal class SpawnMenu
@@ -16,17 +14,14 @@ namespace LethalCompanyTrollMenuMod.tabs
         public static PlayerControllerB currentPlayer = null;
         public static List<bool> plyToggle = new List<bool>();
         public static List<bool> lastToggleState = new List<bool>();
-        public static bool randomSpawn = true;
-        public static bool spawnNearPlayer = false;
-        public static bool spawnNearRandomPlayer = false;
-        private static int lastSelected = 0;
-        private static Select<PlayerControllerB> playerSelect = null;
-        private static Dictionary<string, PlayerControllerB> players = new Dictionary<string, PlayerControllerB>();
+        public static Select<PlayerControllerB> playerSelect = null;
         private static Dictionary<string,int> spawnType = new Dictionary<string, int>()
         {
             {"Random Spawn",0 },
             {"Spawn Near Player",1 },
-            {"Spawn Near Random Player",2 }
+            {"Spawn Near Random Player",2 },
+            {"Spawn Behind Player", 3 },
+            {"Spawn Behind Random Player", 4 }
         };
         private static Select<int> spawnSelect = null;
         private static int selected = 0;
@@ -36,15 +31,8 @@ namespace LethalCompanyTrollMenuMod.tabs
             if (!TrollMenu.isInGame) return;
             if (playerSelect == null)
             {
-                PlayerControllerB[] plys = GetPlayer();
-                foreach (PlayerControllerB ply in plys)
-                {
-                    if(!players.ContainsKey(ply.playerUsername))
-                    players.Add(ply.playerUsername, ply);
-                }
+                playerSelect = new Select<PlayerControllerB>(TrollMenu.allPlayers);
             }
-            if(playerSelect == null)
-            playerSelect = new Select<PlayerControllerB>(players);
             if(spawnSelect == null)
             {
                 spawnSelect = new Select<int>(spawnType);
@@ -54,117 +42,101 @@ namespace LethalCompanyTrollMenuMod.tabs
         }
         public static void Draw(Rect wr)
         {
-            scrollRect = new Rect(0, 0, wr.width, 100 + 30 * TrollMenu.outsideEnemies.Count + 30 * TrollMenu.insideEnemies.Count);
-            scrollViewVector = GUI.BeginScrollView(new Rect(0, 25, wr.width, wr.height-25), scrollViewVector, scrollRect);
-            int y = 50;
+            int y = 75;
             GUI.Label(new Rect(wr.x, y, wr.width, 25), "Spawn Menu");
             y += 25;
-            selected = spawnSelect.Draw(new Rect(wr.x, y, wr.width, 25));
-            y += 100;
-            if (selected != lastSelected)
-            {
-                randomSpawn = false;
-                spawnNearPlayer = false;
-                spawnNearRandomPlayer = false;
-                lastSelected = selected;
-                switch (selected)
-                {
-                    case 1:
-                        randomSpawn = true;
-                        break;
-                    case 2:
-                        spawnNearPlayer = true;
-                        break;
-                    case 3:
-                        spawnNearRandomPlayer = true;
-                        break;
-                }
-            }
-            
-            GUI.Label(new Rect(wr.x, y, wr.width, 25), "Outside Enemies");
+            selected = spawnSelect.Draw(new Rect(wr.x, y, 200, 25));
+            y += 130;
+            scrollRect = new Rect(0, 0, wr.width, 100 + 30 * TrollMenu.outsideEnemies.Count + 30 * TrollMenu.insideEnemies.Count);
+            scrollViewVector = GUI.BeginScrollView(new Rect(wr.x, y, wr.width, wr.height-y), scrollViewVector, scrollRect);
+            GUI.Label(new Rect(0, 0, wr.width, 25), "Outside Enemies");
+            int ly = 25;
             foreach(KeyValuePair<string,EnemyType> enemy in TrollMenu.outsideEnemies)
             {
                 string name = enemy.Key;
                 EnemyType type = enemy.Value;
-                if (GUI.Button(new Rect(wr.x, wr.y + y, wr.width, 25), name))
+                if (GUI.Button(new Rect(0, ly, wr.width, 25), name))
                 {
-                    if(randomSpawn)
+                    PlayerControllerB ply = GetRandomPlayer();
+                    switch (selected)
                     {
-                        TrollConsole.DisplayMessage("Spawning " + name + " at random position");
-                        TrollMenu.SpawnOutsideEnemy(type);
-                    }else if(spawnNearPlayer)
-                    {
-                        
-                        TrollMenu.SpawnEnemyOutsideNearPlayer(type, currentPlayer);
-                    }
-                    else if (spawnNearRandomPlayer)
-                    {
-                        PlayerControllerB ply = GetRandomPlayer();
-                        if (ply == null)
-                        {
-                            if (currentPlayer == null)
-                            {
-                                ply = GetPlayer()[0];//There is minimum one player because you can't be in game without a player
-                            }
-                            else
-                            {
-                                ply = currentPlayer;
-                            }
-                        }
-                        TrollMenu.SpawnEnemyOutsideNearPlayer(type, ply);
+                        case 1:
+                            TrollMenu.SpawnEnemyOutsideNearPlayer(type, currentPlayer);
+                            break;
+                        case 2:
+                            TrollMenu.SpawnEnemyOutsideNearPlayer(type, ply);
+                            break;
+                        case 3:
+                            SpawnEnemyBehindPlayer(type, currentPlayer);
+                            break;
+                        case 4:
+                            SpawnEnemyBehindPlayer(type, ply);
+                            break;
+                        default:
+                            TrollMenu.SpawnOutsideEnemy(type);
+                            break;
                     }
 
                 }
-                y += 30;
+                ly += 30;
             }
-            y += 25;
-            GUI.Label(new Rect(wr.x, wr.y + y, wr.width, 25), "Inside Enemies");
-            y +=25;
+            ly += 25;
+            GUI.Label(new Rect(0,ly, wr.width, 25), "Inside Enemies");
+            ly += 25;
             foreach (KeyValuePair<string, EnemyType> enemy in TrollMenu.insideEnemies)
             {
                 string name = enemy.Key;
                 EnemyType type = enemy.Value;
-                if (GUI.Button(new Rect(wr.x, wr.y + y, wr.width, 25), name))
+                if (GUI.Button(new Rect(0, ly, wr.width, 25), name))
                 {
-                    if(randomSpawn)
+                    PlayerControllerB ply = GetRandomPlayer();
+                    switch (selected)
                     {
-                        TrollMenu.SpawnInsideEnemy(type);
-                    }
-                    else if (spawnNearPlayer)
-                    {
-                        TrollMenu.SpawnEnemyInsideNearPlayer(type, currentPlayer);
-                    }else if(spawnNearRandomPlayer)
-                    {
-                        PlayerControllerB ply = GetRandomPlayer();
-                        if(ply == null)
-                        {
-                            if(currentPlayer == null)
-                            {
-                                ply = GetPlayer()[0];//There is minimum one player because you can't be in game without a player
-                            }
-                            else
-                            {
-                                ply = currentPlayer;
-                            }
-                        }
-                        TrollMenu.SpawnEnemyInsideNearPlayer(type, ply);
+                        case 1 :
+                            TrollMenu.SpawnEnemyInsideNearPlayer(type, currentPlayer);
+                            break;
+                        case 2:
+                            TrollMenu.SpawnEnemyInsideNearPlayer(type, ply);
+                            break;
+                        case 3:
+                            SpawnEnemyBehindPlayer(type, currentPlayer);
+                            break;
+                        case 4:
+                            SpawnEnemyBehindPlayer(type, ply);
+                            break;
+                        default:
+                            TrollMenu.SpawnInsideEnemy(type);
+                            break;
                     }
                 }
-                y += 30;
+                ly += 30;
             }
             GUI.EndScrollView();
             GUI.Box(new Rect(wr.x + wr.width, wr.y, wr.width, 30 * GetPlayer().Length), "Select a player");
+            if(TrollMenu.allPlayers.Count == 0)
+            {
+                GUI.Label(new Rect(wr.x + wr.width, wr.y + 25, wr.width, 25), "No players found");
+                return;
+            }
             currentPlayer = playerSelect.Draw(new Rect(wr.x + wr.width, wr.y+25, wr.width, 25));
         }
 
         private static PlayerControllerB GetRandomPlayer()
         {
             PlayerControllerB[] players = GetPlayer();
-            if(players == null || players.Length == 0)
+            var ply = players[TrollMenu.roundManager.AnomalyRandom.Next(0, players.Length)];
+            if (ply == null)
             {
-                return null;
+                if (currentPlayer == null)
+                {
+                    ply = GetPlayer()[0];//There is minimum one player because you can't be in game without a player
+                }
+                else
+                {
+                    ply = currentPlayer;
+                }
             }
-            return players[UnityEngine.Random.Range(0, players.Length)];
+            return ply;
         }
 
         private static PlayerControllerB[] GetPlayer()
@@ -226,9 +198,23 @@ namespace LethalCompanyTrollMenuMod.tabs
                 currentPlayer = null;
             }
         }
-
-        private static void CreateAnomalyMenu(Rect wr)
+        private static void SpawnEnemyBehindPlayer(EnemyType enemy,PlayerControllerB ply)
         {
+            if (enemy == null)
+            {
+                TrollConsole.DisplayMessage("No enemy selected", MessageType.ERROR);
+                return;
+            }
+            if (ply == null)
+            {
+                TrollConsole.DisplayMessage("No player selected", MessageType.ERROR);
+                return;
+            }
+            TrollConsole.DisplayMessage("Spawning " + enemy.name + " behind " + ply.playerUsername + "("+ (ply.isInsideFactory ? "Inside" : "Outside") + ")");
+            Vector3 pos = TrollMenu.GetPositionBehind(ply.transform.position, ply.transform.forward, 10f);
+            EnemyAI enemyAI = TrollMenu.SpawnEnemy(enemy, pos, !ply.isInsideFactory);
+            enemyAI.destination = ply.transform.position;
+            enemyAI.moveTowardsDestination = true;
 
         }
     }

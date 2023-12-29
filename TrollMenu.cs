@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using BepInEx;
 using BepInEx.Logging;
@@ -7,10 +6,12 @@ using HarmonyLib;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using GameNetcodeStuff;
-using System.Reflection;
 using Unity.Netcode;
 using LethalCompanyTrollMenuMod.Component;
 using LethalCompanyTrollMenuMod.tabs;
+using System.Reflection;
+using UnityEngine.AI;
+using System;
 
 namespace LethalCompanyTrollMenuMod
 {
@@ -20,7 +21,7 @@ namespace LethalCompanyTrollMenuMod
         // Mod Details
         private const string modGUID = "Nico78916.TrollMenu";
         private const string modName = "Lethal Company Troll Menu";
-        private const string modVersion = "1.0.0.0";
+        public const string modVersion = "1.0.1";
 
         public static ManualLogSource mls { get; private set; }
 
@@ -50,6 +51,9 @@ namespace LethalCompanyTrollMenuMod
         public static Dictionary<string, PlayerControllerB> deadPlayers = new Dictionary<string, PlayerControllerB>();
         public static Dictionary<string, PlayerControllerB> allPlayers = new Dictionary<string, PlayerControllerB>();
 
+        public static List<EnemyAI> stoppedEnemies = new List<EnemyAI>();
+
+
         private static RandomMapObject[] randomMapObjects = new RandomMapObject[0];
 
         public static List<EnemyAI> aliveEnemies {
@@ -58,6 +62,34 @@ namespace LethalCompanyTrollMenuMod
                 if (!isInGame || roundManager == null) return new List<EnemyAI>();
                 return roundManager.SpawnedEnemies;
             }
+        }
+
+        private Assembly getGameAssembly()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            //store the current location of the assembly
+            string location = assembly.Location;
+            //We split the location to find "Lethal Company"
+            string[] split = location.Split('\\');
+            //Getting the index of "Lethal Company"
+            int index = Array.IndexOf(split, "Lethal Company");
+            //We create a new array with the length of the split array minus the index of "Lethal Company"
+            List<string> newSplit = new List<string>();
+            //We copy the split array into the newSplit array
+            for (int i = 0; i <= index; i++)
+            {
+                newSplit.Add(split[i]);
+            }
+            //We add the \Lethal Company_Data\Managed\Assembly-CSharp.dll to the newSplit array
+            newSplit.Add("Lethal Company_Data");
+            newSplit.Add("Managed");
+            newSplit.Add("Assembly-CSharp.dll");
+            //We join the newSplit array to get the path to the Assembly-CSharp.dll
+            string path = string.Join("\\", newSplit.ToArray());
+            mls.LogInfo(path);
+            //We load the Assembly-CSharp.dll
+            Assembly cSharp = Assembly.LoadFile(path);
+            return cSharp;
         }
 
         void Awake()
@@ -74,8 +106,44 @@ namespace LethalCompanyTrollMenuMod
             obj.AddComponent<TabManager>();
             obj.AddComponent<TrollConsole>();
             Window = obj.GetComponent<TabManager>();
-
             TrollMenuStyle.Awake();
+            // Obtenez toutes les sous-classes de EnemyAI
+            var enemyAISubclasses = getGameAssembly().GetTypes()
+                .Where(t => t.IsSubclassOf(typeof(EnemyAI)));
+            mls.LogInfo(enemyAISubclasses.Count() + " subclasses of EnemyAI found");
+            foreach (var subclass in enemyAISubclasses)
+            {
+                mls.LogInfo("Found " + subclass.Name+" as subclass of EnemyAI");
+                // Patchez la méthode Update pour chaque sous-classe
+                harmony.Patch(
+                    original: AccessTools.Method(subclass, "Update"),
+                    postfix: new HarmonyMethod(typeof(EnemyAIUpdatePatch), "Postfix"),
+                    prefix: new HarmonyMethod(typeof(EnemyAIUpdatePatch), "Prefix")
+                );
+            }
+            MethodInfo[] methods = typeof(EnemyAI).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance);
+            foreach (MethodInfo method in methods)
+            {
+                
+                    mls.LogInfo(method.Name);
+                
+            }
+        }
+
+        [HarmonyPatch]
+        public class EnemyAIUpdatePatch
+        {
+            static void Postfix(EnemyAI __instance)
+            {
+                if(AliveEnemies.frozenEnemies.ContainsKey(__instance) && AliveEnemies.frozenEnemies[__instance])
+                __instance.agent.speed = 0;
+            }
+
+            static bool Prefix(EnemyAI __instance)
+            {
+                // Votre code ici.
+                return true;//__instance.isOutside != __instance.enemyType.isOutsideEnemy;
+            }
         }
 
         public EnemyAI[] FindAliveEnemies()
@@ -84,28 +152,11 @@ namespace LethalCompanyTrollMenuMod
             return FindObjectsOfType<EnemyAI>();
         }
 
+
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
         [HarmonyPrefix]
         public static bool LoadNewLevelPatch(ref RoundManager __instance)
         {
-            //Update playerList
-            alivePlayers.Clear();
-            deadPlayers.Clear();
-            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
-            {
-                if (!player.isPlayerDead)
-                {
-                    if(!alivePlayers.ContainsKey(player.playerUsername))
-                        alivePlayers.Add(player.playerUsername, player);
-                }
-                else
-                {
-                    if(!deadPlayers.ContainsKey(player.playerUsername))
-                        deadPlayers.Add(player.playerUsername, player);
-                }
-                if(!allPlayers.ContainsKey(player.playerUsername))
-                    allPlayers.Add(player.playerUsername, player);
-            }
             roundManager = __instance;
             roundManager.mapPropsContainer = GameObject.FindGameObjectWithTag("MapPropsContainer");
             //Get all the spawnable enemies
@@ -178,19 +229,25 @@ namespace LethalCompanyTrollMenuMod
             }
         }
 
-
-        private static void spawnEnemy(EnemyType enemyType,Vector3 position,float yRot)
+        [HarmonyPatch(typeof(ItemDropship), nameof(ItemDropship.ShipLeave))]
+        [HarmonyPostfix]
+        public static void OnShipLeave()
         {
-            GameObject gameObject3 = UnityEngine.Object.Instantiate<GameObject>(enemyType.enemyPrefab, position, Quaternion.Euler(new Vector3(0.0f, yRot, 0.0f)));
-            gameObject3.GetComponentInChildren<NetworkObject>().Spawn(true);
-            roundManager.SpawnedEnemies.Add(gameObject3.GetComponent<EnemyAI>());
-            enemyType.numberSpawned++;
+            mls.LogInfo("Ship left");
+            SpawnMenu.currentPlayer = null;
         }
-        
+
+
+        [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.Start))]
+        [HarmonyPrefix]
+        public static bool EnemyAIStartPatch(ref EnemyAI __instance)
+        {
+            return true;
+        }
+
         private static void SpawnInsideEnemy(EnemyType enemy, EnemyVent vent)
         {
-            spawnEnemy(enemy, vent.transform.position, vent.transform.eulerAngles.y);
-            TrollConsole.DisplayMessage("Spawned " + enemy.enemyName + " at " + vent.transform.position,MessageType.SUCCESS);
+            SpawnEnemy(enemy, vent.transform.position, false);
         }
 
         public static void SpawnInsideEnemy(EnemyType enemy)
@@ -275,18 +332,24 @@ namespace LethalCompanyTrollMenuMod
                 if (flag)
                     break;
             }
-            SpawnOutsideEnemy(enemy, positionInRadius);
+            SpawnEnemy(enemy, positionInRadius,true);
         }
-        private static void SpawnOutsideEnemy(EnemyType enemy, Vector3 position)
+        public static EnemyAI SpawnEnemy(EnemyType enemy,Vector3 position,bool isOutside)
         {
+            GameObject enemyPrefab = enemy.enemyPrefab;
+            //We clone the enemy prefab
+
             GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(enemy.enemyPrefab, position, Quaternion.Euler(Vector3.zero));
-            gameObject.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
-            roundManager.SpawnedEnemies.Add(gameObject.GetComponent<EnemyAI>());
+            gameObject.SetActive(false);
+            EnemyAI component = gameObject.GetComponent<EnemyAI>();
+            roundManager.SpawnedEnemies.Add(component);
             ++gameObject.GetComponent<EnemyAI>().enemyType.numberSpawned;
-            TrollConsole.DisplayMessage("Spawned " + enemy.enemyName + " at " + position,MessageType.SUCCESS);
+            component.isOutside = isOutside;
+            gameObject.SetActive(true);
+            gameObject.gameObject.GetComponentInChildren<NetworkObject>().Spawn(true);
+            TrollConsole.DisplayMessage("Spawned " + enemy.enemyName + " at " + position + "("+(isOutside ? "outside" : "inside")+")", MessageType.SUCCESS);
+            return component;
         }
-
-
         public static void SpawnEnemyInsideNearPlayer(EnemyType enemy, PlayerControllerB player)
         {
             TrollConsole.DisplayMessage("Spawning " + enemy.enemyName + " near " + player.playerUsername);
@@ -379,7 +442,7 @@ namespace LethalCompanyTrollMenuMod
                 if (flag)
                     break;
             }
-            SpawnOutsideEnemy(enemy, positionInRadius);
+            SpawnEnemy(enemy, positionInRadius,false);
         }
 
         public static void SpawnHostileObjectAtPosition(SpawnableMapObject obj, Vector3 pos)
@@ -433,6 +496,21 @@ namespace LethalCompanyTrollMenuMod
             TrollConsole.DisplayMessage("Spawning " + obj.prefabToSpawn.name + " at "+ Vector3.Distance(positionInRadius,ply.transform.position) +"m from "+ ply.playerUsername);
             SpawnHostileObjectAtPosition(obj, positionInRadius);
 
+        }
+
+        public static Vector3 GetPositionBehind(Vector3 pos, Vector3 forward, float distance = 10f, NavMeshHit navHit = default(NavMeshHit))
+        {
+            Vector3 newPos = pos - forward.normalized * distance;
+            float y = newPos.y;
+            newPos = UnityEngine.Random.insideUnitSphere * distance + newPos;
+            newPos.y = y;
+            if (NavMesh.SamplePosition(newPos, out navHit, distance, -1))
+            {
+                return navHit.position;
+            }
+
+            TrollConsole.DisplayMessage("Unable to get position behind! Returning old pos",MessageType.ERROR);
+            return pos;
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Runtime.CompilerServices;
+using LethalCompanyTrollMenuMod.tabs;
 
 namespace LethalCompanyTrollMenuMod.Component
 {
@@ -28,6 +29,7 @@ namespace LethalCompanyTrollMenuMod.Component
             {
                 if (type.Namespace == "LethalCompanyTrollMenuMod.tabs")
                 {
+                    if(type.Name.Contains("<")) continue;
                     tabs.Add(type);
                 }
             }
@@ -73,7 +75,12 @@ namespace LethalCompanyTrollMenuMod.Component
                 showMenu = !showMenu;
                 if(showMenu)
                 {
-                    foreach(Type type in toolBarTypes)
+                    TrollMenu.allPlayers.Clear();
+                    foreach (var ply in StartOfRound.Instance.allPlayerScripts)
+                    {
+                        TrollMenu.allPlayers.Add(ply.playerUsername,ply);
+                    }
+                    foreach (Type type in toolBarTypes)
                     {
                         if(type.GetMethod("OnMenuOpened") != null)
                             type.GetMethod("OnMenuOpened").Invoke(null, null);
@@ -83,8 +90,11 @@ namespace LethalCompanyTrollMenuMod.Component
             if (CurrentScene() != scene)
             {
                 scene = CurrentScene();
-                TrollMenu.mls.LogError("Scene changed to " + scene);
                 TrollMenu.isInGame = scene == "SampleSceneRelay";
+                SpawnMenu.currentPlayer = null;
+                SpawnMenu.playerSelect.SetToDefault();
+                DeadlyItems.currentPlayer = null;
+                DeadlyItems.playerSelect.SetToDefault();
             }
         }
 

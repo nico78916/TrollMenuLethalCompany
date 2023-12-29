@@ -1,8 +1,4 @@
-﻿using Microsoft.SqlServer.Server;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace LethalCompanyTrollMenuMod
 {
@@ -16,7 +12,7 @@ namespace LethalCompanyTrollMenuMod
         public static GUIStyle errorLabel = new GUIStyle();
         public static GUIStyle errorStyle = new GUIStyle();
         public static GUIStyle successStyle = new GUIStyle();
-
+        public static GUIStyle infoStyle = new GUIStyle();
         private static Texture2D CreateTexture(int width, int height, Color col)
         {
             Color[] pix = new Color[width * height];
@@ -66,11 +62,19 @@ namespace LethalCompanyTrollMenuMod
             errorStyle.onNormal.textColor = Color.red;
             errorStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
             errorStyle.fontSize = 20;
+            errorStyle.active.background = CreateTexture(2, 2, new Color(1f, 1f, 1f, .2f));
 
             successStyle.normal.textColor = Color.green;
             successStyle.onNormal.textColor = Color.green;
             successStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
             successStyle.fontSize = 20;
+            successStyle.active.background = CreateTexture(2, 2, new Color(1f, 1f, 1f, .2f));
+
+            infoStyle.normal.textColor = Color.white;
+            infoStyle.onNormal.textColor = Color.white;
+            infoStyle.normal.background = CreateTexture(2, 2, new Color(0.0f, 0.0f, 0.0f, .0f));
+            infoStyle.fontSize = 20;
+            infoStyle.active.background = CreateTexture(2, 2, new Color(1f, 1f, 1f, .2f));
         }
     }
 }

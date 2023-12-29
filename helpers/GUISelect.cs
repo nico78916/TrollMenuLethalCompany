@@ -33,11 +33,24 @@ namespace LethalCompanyTrollMenuMod.helpers
             defaultIndex = opts.Values.ToList().IndexOf(value);
         }
 
+        public void SetToDefault()
+        {
+            for (int i = 0; i < opts.Count; i++)
+            {
+                old[i] = false;
+                current[i] = false;
+            }
+            if (defaultValue != null)
+            {
+                current[defaultIndex] = true;
+            }
+        }
+
         public T Draw(Rect wr)
         {
             if (opts.Count == 0) return defaultValue;
             int i = 0;
-            if(old.Length != opts.Count)
+            if (old.Length != opts.Count)
             {
                 old = new bool[opts.Count];
                 current = new bool[opts.Count];
@@ -76,7 +89,6 @@ namespace LethalCompanyTrollMenuMod.helpers
                     old[i] = current[i];
                 }
             }
-
             //Get the index of true value
             List<bool> currentList = current.ToList();
             int index = currentList.IndexOf(true);
